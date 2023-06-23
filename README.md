@@ -1,0 +1,169 @@
+# terraform
+
+provider "aws" {
+
+  region = "us-east-1"
+  access_key = ""
+  secret_key = ""
+}
+
+resource "aws_instance" "firstinstance" {
+
+  ami           = "ami-006dcf34c09e50022"  # Ubuntu 20.04 LTS  (ami+snap)
+  instance_type = "t2.micro"
+  count = 1
+  tags = {
+   Name = "terraform instance"
+   Environment = "cloudbots"
+ }
+}
+
+resource "aws_vpc" "main" {                                     (vpc)
+  cidr_block       = "172.32.0.0/16"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "terraform-vpc"
+  }
+}
+
+resource "aws_subnet" "main" {                                  (subnet)
+  vpc_id     = "vpc-0d8c0db0135d18ca9"
+  cidr_block = "172.32.10.0/24"
+
+  tags = {
+    Name = "Main"
+  }
+}
+
+resource "aws_subnet" "subnet2" {                               (subnet2)
+  vpc_id     = "vpc-0d8c0db0135d18ca9"
+  cidr_block = "172.32.20.0/24"
+
+  tags = {
+    Name = "Main"
+  }
+ }
+
+resource "aws_internet_gateway" "gw" {                          (internet gate way)
+  vpc_id = "vpc-0d8c0db0135d18ca9"
+
+  tags = {
+    Name = "main"
+  }
+}
+
+resource "aws_route_table" "route-1" {                          (route table)
+  vpc_id = "vpc-0d8c0db0135d18ca9"
+
+  route {
+    cidr_block = "172.32.30.0/24"
+    gateway_id = "igw-089c5b00875a3b8ec"
+  }
+
+    tags = {
+    Name = "route-1"
+  }
+}
+
+
+resource "aws_elb" "bar" {                                      (load balancer)
+  name               = "terraform-elb"
+  availability_zones = ["us-east-1a", "us-east-1b"]
+
+  listener {
+    instance_port     = 8000
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+
+  listener {
+    instance_port      = 8000
+    instance_protocol  = "http"
+    lb_port            = 443
+    lb_protocol        = "https"
+    ssl_certificate_id = "arn:aws:iam::373456797040:user/anand"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    target              = "HTTP:8000/"
+    interval            = 30
+  }
+
+  instances                   = ["i-0c22556865f34dd41"]
+  cross_zone_load_balancing   = true
+  idle_timeout                = 400
+  connection_draining         = true
+  connection_draining_timeout = 400
+
+  tags = {
+    Name = "terraform-elb"
+  }
+}
+
+resource "aws_ami_from_instance" "ami-terraform" {                (ami+snap)
+  name              = "ami"
+  source_instance_id = "i-047131ba094eb1a73"
+}
+
+data "aws_ami" "ubuntu" {                                         (auto scaling-configuration)
+  most_recent = true
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["373456797040"]
+}
+
+resource "aws_launch_configuration" "as_conf" {                   (auto-scale launch)
+  name          = "config_config"
+  image_id      = "ami-0ae41e7359987f61a"
+  instance_type = "t2.micro"
+}
+
+resource "aws_launch_template" "auto" {
+  name_prefix   = "auto-scaling"
+  image_id      = "ami-0704f1ea742ac25e0"
+  instance_type = "t2.micro"
+}
+
+resource "aws_autoscaling_group" "bar" {
+  availability_zones = ["us-east-1a"]
+  desired_capacity   = 1
+  max_size           = 1
+  min_size           = 1
+
+  launch_template {
+    id      = aws_launch_template.auto.id
+    version = "$Latest"
+  }
+}
+
+resource "aws_sns_topic" "sns" {                                    (sns-topic)
+  name = "sns-prac"
+}
+
+resource "aws_sns_topic_subscription" "user_updates_sqs_target" {   (sns-sub)
+  topic_arn = "arn:aws:sns:us-east-1:373456797040:sns-prac"
+  protocol  = "sqs"
+  endpoint  = "arn:aws:sqs:us-east-1:373456797040:tomcat"
+}
+
+resource "aws_cloudwatch_metric_alarm" "alaram" {                   (cloud-watch)      
+  alarm_name                = "terraform-alaram"
+  comparison_operator       = "GreaterThanOrEqualToThreshold"
+  evaluation_periods        = "2"
+  metric_name               = "CPUUtilization"
+  namespace                 = "AWS/EC2"
+  period                    = "120"
+  statistic                 = "Average"
+  threshold                 = "80"
+  alarm_description         = "This metric monitors ec2 cpu utilization"
+  insufficient_data_actions = []
+}
