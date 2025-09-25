@@ -1,31 +1,22 @@
 1.Importing Existing Resources
-
 When?
       If infrastructure exists outside Terraform and you want Terraform to manage it.
-
 How?
       Write a resource block in .tf files.
-
 Run:
-
       terraform import <resource_address> <resource_id>
-
 Important
-
       After import, run terraform plan to detect config mismatches.
       Update .tf files accordingly to match reality.
 
 
 2. Dealing with Drift and Manual Changes
-
 What is Drift?
       When infrastructure changes happen outside Terraform (manual console edits, scripts, etc.).    
       Terraform state file becomes out-of-sync with reality.
-      
 Symptoms      
       Terraform doesn’t detect missing or changed resources in terraform plan.
       terraform apply might fail or ignore changes.
-      
 Common Scenarios & Solutions
       Scenario	Problem	Solution
       Resource manually deleted	    Terraform state still thinks it exists	    Run terraform apply to recreate or remove state entry manually (terraform state rm) and then apply
@@ -42,7 +33,6 @@ Common Scenarios & Solutions
 
 
 4. Protecting Infrastructure from Accidental Changes
-
       Lifecycle Rule: prevent_destroy
       Terraform provides lifecycle rules to control how it handles resource changes. One of the most critical lifecycle rules is:
             lifecycle {
@@ -55,10 +45,8 @@ Purpose:
 
 Lifecycle Rules:
         Prevent accidental destruction:
-        
         resource "aws_instance" "example" {
           # ...
-        
           lifecycle {
             prevent_destroy = true
           }
@@ -66,7 +54,6 @@ Lifecycle Rules:
 
 -----How to Remove a Resource with prevent_destroy-----
 You must do one of the following:
-
 ✅ Option 1: Remove the prevent_destroy rule
         # Remove this block:
         lifecycle {
@@ -80,7 +67,6 @@ Then run:
         Also removes it from state
         Terraform will detect that and plan to destroy it (if prevent_destroy is no longer present)
         This will make Terraform refuse to destroy the resource unless you override with -force.
-
 
 5. Remote State and Collaboration:
 Problem
@@ -100,7 +86,6 @@ Remote state enables:
 6. Modules for Reusability and Maintainability:
 What?
         Encapsulated Terraform configurations you can reuse.
-
 Why?
         Avoid repetition.
         Maintain DRY (Don’t Repeat Yourself).
@@ -110,7 +95,6 @@ How?
         Create modules as directories with .tf files.
 
 Call modules with:
-
         module "vpc" {
           source = "./modules/vpc"
           cidr   = "10.0.0.0/16"
