@@ -1,126 +1,76 @@
 
 Terraform Infrastructure Setup Documentation
 
-
-
 1. Objective
 
-Create an Amazon EC2 instance with all prerequisite services (VPC, subnet, security group, key pair, IAM role), leveraging Terraform modules and variables to:
-
-Keep sensitive data/configuration outside main Terraform files
-
-Reuse infrastructure components via modules
-
-Verify Terraform code without connecting to AWS (dry-run)
-
-Understand module usage through a practical example
-
+          Create an Amazon EC2 instance with all prerequisite services (VPC, subnet, security group, key pair, IAM role), leveraging Terraform modules and variables to:
+          
+          Keep sensitive data/configuration outside main Terraform files
+          
+          Reuse infrastructure components via modules
+          
+          Verify Terraform code without connecting to AWS (dry-run)
+          
+          Understand module usage through a practical example
 
 
 2. Initial Terraform EC2 Code Setup
 
-Create EC2 instance resource with attached:
-
-Key pair,  Security group,  Subnet (inside VPC),  IAM role
-
-Sensitive data (AMI ID, instance type, IAM role) are passed as variables.
-
-Example:
-
-resource "aws_instance" "example" {
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  subnet_id              = var.subnet_id
-  security_groups        = [var.security_group]
-  key_name               = var.key_name
-  iam_instance_profile   = var.instance_profile_name
-
-  tags = {
-    Name = "ExampleInstance"
-  }
-}
-
-
+          Create EC2 instance resource with attached:
+          
+          Key pair,  Security group,  Subnet (inside VPC),  IAM role
+          
+          Sensitive data (AMI ID, instance type, IAM role) are passed as variables.
+          
+          Example:
+          
+          resource "aws_instance" "example" {
+            ami                    = var.ami_id
+            instance_type          = var.instance_type
+            subnet_id              = var.subnet_id
+            security_groups        = [var.security_group]
+            key_name               = var.key_name
+            iam_instance_profile   = var.instance_profile_name
+          
+            tags = {
+              Name = "ExampleInstance"
+            }
+          }
 
 
 3. Using Variables for Sensitive Data
 
-Variables are defined to keep the config clean and secure.
+          Variables are defined to keep the config clean and secure.
+          
+          Example variable declaration in variables.tf:
+          
+          variable "ami_id" {
+            description = "AMI ID for EC2 instance"
+            type        = string
+          }
+          
+          variable "instance_type" {
+            description = "Instance type"
+            default     = "t2.micro"
+          }
+          
+          In terraform.tfvars or environment, set actual values:
+          ami_id = "ami-0abcdef1234567890"
 
-Example variable declaration in variables.tf:
+.
 
-variable "ami_id" {
-  description = "AMI ID for EC2 instance"
-  type        = string
-}
+4. Terraform Modules Concept
 
-variable "instance_type" {
-  description = "Instance type"
-  default     = "t2.micro"
-}
-
-
-In terraform.tfvars or environment, set actual values:
-
-ami_id = "ami-0abcdef1234567890"
-
-
-
-
-4. Verify Terraform Installation and Dry Run
-
-Check Terraform installed:
-
-terraform version
-
-Dry-run to verify Terraform code (no resource creation):
-
-terraform plan
+        Modules are reusable Terraform code blocks.
+        
+        Helps organize and reuse code.
+        
+        The root config is a module.
+        
+        You can create child modules and call them from root.
 
 
-
-5. AWS Credentials Error During terraform plan
-
-Error like:
-
-Error: No valid credential sources found
-
-
-Means Terraform AWS provider tries API calls but no AWS creds found.
-
-
-
-
-6. Practice Terraform Without AWS Credentials
-      Option 1: terraform validate
-      
-      Checks syntax only, no AWS API calls.
-      
-      terraform validate
-      
-      Option 2: Comment out AWS provider, mock values
-      
-      Disable AWS provider to avoid connection:
-      
-      # provider "aws" {
-      #   region = var.aws_region
-      # }
-
-
-Use mock/static values in variables to test config structure.
-
-7. Terraform Modules Concept
-
-      Modules are reusable Terraform code blocks.
-      
-      Helps organize and reuse code.
-      
-      The root config is a module.
-      
-      You can create child modules and call them from root.
-
-
-8. Example Module: EC2 Instance
+5. Example Module: EC2 Instance
 
 Inside modules/ec2_instance/:
 ###############
@@ -278,7 +228,7 @@ ________________________________________________________________________________
           terraform output
 
 ____________________________________________________________________________________________
-11. Summary Table
+6. Summary Table
           Topic	Key Points
           EC2 Terraform Setup	Use variables, attach SG, key, IAM, subnet
           Avoid AWS creds for dry run	Use terraform validate, comment out provider
@@ -288,7 +238,7 @@ ________________________________________________________________________________
 
 _____________________________________________________________________________________________
 
-12. Architecture Overview & Flow
+7. Architecture Overview & Flow
           Architecture Components
           Component	Description
           VPC	Isolated virtual network
