@@ -69,8 +69,60 @@ Terraform Infrastructure Setup Documentation
         
         You can create child modules and call them from root.
 
+5. Architecture Overview & Flow
+          Architecture Components
+          Component	Description
+          VPC	Isolated virtual network
+          Subnet	Subsection of VPC to place EC2 instance
+          Security Group	Controls inbound/outbound traffic
+          Key Pair	SSH access to EC2 instance
+          IAM Role/Profile	Permissions assigned to EC2 instance
+          EC2 Instance	Virtual machine running workload
+          Infrastructure Flow Diagram
+          +-------------------------+
+          |         Root Module     |
+          |  (main.tf, variables.tf)|
+          +-----------+-------------+
+                      |
+                      | calls
+                      v
+          +-------------------------+
+          |     EC2 Instance Module  |
+          |  (ami_id, subnet_id...)  |
+          +----+----------+---------+
+               |          |         
+               |          | uses
+               |          v
+          +------------+   +----------------+   +----------------+
+          |  VPC       |   | Security Group |   | IAM Role/Profile|
+          |  10.0.0.0/16|   | Inbound rules |   | Permissions     |
+          +------------+   +----------------+   +----------------+
+               |
+               v
+          +-----------+
+          | Subnet    |
+          | 10.0.1.0/24|
+          +-----------+
+          
+                       +-------------------+
+                       |  Key Pair (SSH)   |
+                       +-------------------+
+          
+          All combine to provision the EC2 instance.
+          
+          Terraform Execution Flow
+          terraform init        # Initialize providers and modules
+                 |
+          terraform validate    # Syntax check, no AWS API call
+                 |
+          terraform plan        # Create execution plan (dry run)
+                 |
+          terraform apply       # Provision resources in AWS
+                 |
+          terraform output      # Display outputs like instance ID, IP
+____________________________________________________________________________________________
 
-5. Example Module: EC2 Instance
+6. Example Module: EC2 Instance
 
 Inside modules/ec2_instance/:
 ###############
@@ -220,7 +272,7 @@ terraform.tfvars
 
 
 _____________________________________________________________________________________________
-10. How to Run
+7. How to Run
           terraform init
           terraform validate
           terraform plan
@@ -228,7 +280,7 @@ ________________________________________________________________________________
           terraform output
 
 ____________________________________________________________________________________________
-6. Summary Table
+8. Summary Table
           Topic	Key Points
           EC2 Terraform Setup	Use variables, attach SG, key, IAM, subnet
           Avoid AWS creds for dry run	Use terraform validate, comment out provider
@@ -237,55 +289,3 @@ ________________________________________________________________________________
           Root config	Calls module with variables
 
 _____________________________________________________________________________________________
-
-7. Architecture Overview & Flow
-          Architecture Components
-          Component	Description
-          VPC	Isolated virtual network
-          Subnet	Subsection of VPC to place EC2 instance
-          Security Group	Controls inbound/outbound traffic
-          Key Pair	SSH access to EC2 instance
-          IAM Role/Profile	Permissions assigned to EC2 instance
-          EC2 Instance	Virtual machine running workload
-          Infrastructure Flow Diagram
-          +-------------------------+
-          |         Root Module     |
-          |  (main.tf, variables.tf)|
-          +-----------+-------------+
-                      |
-                      | calls
-                      v
-          +-------------------------+
-          |     EC2 Instance Module  |
-          |  (ami_id, subnet_id...)  |
-          +----+----------+---------+
-               |          |         
-               |          | uses
-               |          v
-          +------------+   +----------------+   +----------------+
-          |  VPC       |   | Security Group |   | IAM Role/Profile|
-          |  10.0.0.0/16|   | Inbound rules |   | Permissions     |
-          +------------+   +----------------+   +----------------+
-               |
-               v
-          +-----------+
-          | Subnet    |
-          | 10.0.1.0/24|
-          +-----------+
-          
-                       +-------------------+
-                       |  Key Pair (SSH)   |
-                       +-------------------+
-          
-          All combine to provision the EC2 instance.
-          
-          Terraform Execution Flow
-          terraform init        # Initialize providers and modules
-                 |
-          terraform validate    # Syntax check, no AWS API call
-                 |
-          terraform plan        # Create execution plan (dry run)
-                 |
-          terraform apply       # Provision resources in AWS
-                 |
-          terraform output      # Display outputs like instance ID, IP
