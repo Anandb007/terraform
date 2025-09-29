@@ -22,13 +22,66 @@
         Highly available and durable.
         Versioning enabled to preserve past state versions.
 
-4.The Need for State Locking:
+4.Why Use DynamoDB with S3 for Terraform State?
+    S3 alone doesn’t support state locking.
+    Terraform uses DynamoDB to implement state locking and consistency checking.
+    This prevents multiple users from running Terraform commands simultaneously and corrupting the state.
+
+5.What is Object Locking in S3?
+	Object Locking is an AWS feature to prevent an object from being deleted or overwritten for a fixed period or indefinitely.
+	Helps meet compliance or retention policies.
+	For Terraform state, it adds another layer of protection to avoid accidental deletion or modification.
+
+5.The Need for State Locking:
     When multiple users or automation processes run Terraform commands at the same time, they might simultaneously read/write the state file, causing state corruption.
     Terraform supports state locking to prevent this concurrent access.
 
 5.State File Versioning
     S3 Versioning keeps previous versions of the state file.
     Useful to roll back if corruption or mistakes occur.
+
+
+Creating S3 Bucket and DynamoDB Table with Terraform (Example):
+    Create a file infrastructure.tf:
+    provider "aws" {
+      region = "us-east-1"
+    }
+    resource "aws_s3_bucket" "terraform_state" {
+      bucket = "my-terraform-state-bucket-123456" # Use unique name
+      versioning {
+        enabled = true
+      }
+      object_lock_configuration {
+        object_lock_enabled = "Enabled"
+        rule {
+          default_retention {
+            mode = "GOVERNANCE"
+            days = 30
+          }
+        }
+      }
+    }
+    resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
+      bucket = aws_s3_bucket.terraform_state.id
+    versioning_configuration {
+        status = "Enabled"
+      }
+    }
+    resource "aws_dynamodb_table" "terraform_locks" {
+      name         = "terraform-lock-table"
+      billing_mode = "PAY_PER_REQUEST"
+      hash_key     = "LockID"
+    attribute {
+        name = "LockID"
+        type = "S"
+      }
+    }
+    
+    
+    Explanation:
+    	S3 Bucket: Versioning is enabled (to preserve old state files). Object locking is enabled with GOVERNANCE mode and 30 days retention.
+    	DynamoDB Table: Used for state locking, with primary key LockID.
+
 
 6.Encrypting State Files
     Enable server-side encryption (encrypt = true in backend config).
