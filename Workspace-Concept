@@ -1,0 +1,108 @@
+Purpose
+    •	Maintain separate infrastructure environments (e.g., dev, prod) with isolated Terraform states.
+    •	Store Terraform state remotely on AWS S3 for durability, accessibility, and versioning.
+    •	Use AWS DynamoDB for state locking to prevent concurrent modifications.
+    •	Organize reusable infrastructure components as modules.
+    •	Use Terraform workspaces to manage environment isolation.
+
+Folder Structure
+    terraform-project/
+    ├── backend-infra.tf          # Creates S3 bucket and DynamoDB table for remote backend
+    ├── backend.tf                # Configures Terraform backend for remote state
+    ├── modules/
+    │   └── ec2-instance/         # Reusable EC2 instance module
+    │       ├── main.tf
+    │       ├── variables.tf
+    │       └── outputs.tf
+    ├── envs/
+    │   ├── dev/                  # Dev environment configuration
+    │   │   ├── main.tf
+    │   │   ├── variables.tf
+    │   │   └── terraform.tfvars
+    │   └── prod/                 # Prod environment configuration
+    │       ├── main.tf
+    │       ├── variables.tf
+    │       └── terraform.tfvars
+    └── outputs.tf                # Outputs aggregated from modules
+________________________________________
+3. AWS Backend Resources
+    •	S3 Bucket: Stores the Terraform remote state files.
+    o	Versioning enabled for history and recovery.
+    o	Server-side encryption (AES256) enabled for security.
+    •	DynamoDB Table: Provides a locking mechanism to prevent concurrent state modifications.
+    o	Uses LockID as the partition key.
+    o	Billing mode is PAY_PER_REQUEST for cost efficiency.
+    Terraform resource definitions are in backend-infra.tf.
+________________________________________
+4. Terraform Backend Configuration
+    In backend.tf, Terraform is configured to use the S3 bucket and DynamoDB table for remote state and locking:
+    terraform {
+      backend "s3" {
+        bucket         = "tom-terraform-state-bucket-unique-12345"
+        key            = "terraform.tfstate"
+        region         = "us-east-1"
+        dynamodb_table = "terraform-lock-table"
+        encrypt        = true
+      }
+    }
+    •	bucket: Specifies the S3 bucket for state storage.
+    •	key: The path inside the bucket for the state file.
+    •	dynamodb_table: DynamoDB table for state locking.
+    •	encrypt: Ensures encryption at rest for the state file.
+________________________________________
+5. Terraform Workspaces
+    •	Workspaces allow multiple state files for the same configuration to exist side-by-side.
+    •	Used to isolate environments such as dev and prod without duplicating code.
+    •	When initialized, Terraform creates a workspace-specific state file path automatically.
+    Commands used:
+    terraform workspace new dev
+    terraform workspace select dev
+    
+    terraform workspace new prod
+    terraform workspace select prod
+________________________________________
+6. Terraform Modules
+    •	Reusable components are encapsulated in the ec2-instance module under modules/ec2-instance/.
+    •	Module input variables include AMI ID, instance type, subnet ID, key pair name, security groups, and tags.
+    •	Outputs from the module provide instance IDs and IP addresses.
+________________________________________
+7. Environment Configuration
+    Separate environment directories hold specific configuration and variable files:
+        •	Dev environment (envs/dev/)
+        •	Prod environment (envs/prod/)
+    Each has:
+        •	main.tf - calls modules with environment-specific values.
+        •	variables.tf - defines variables with defaults for the environment.
+        •	terraform.tfvars (optional) - override variables with environment-specific values.
+    Example of environment-specific variable difference:
+    Variable	Dev Value	Prod Value
+    instance_type	t3.small	t3.medium
+    subnet_id	subnet-0c6db3dae330ce9ac	Different subnet for prod
+________________________________________
+8. How to Use
+    1.	Provision backend infra (S3 bucket + DynamoDB) first using Terraform with local state.
+    2.	terraform init
+    3.	terraform apply -target=aws_s3_bucket.terraform_state -target=aws_dynamodb_table.terraform_lock
+      	Configure backend by adding backend.tf.
+      	Initialize backend
+        	terraform init
+    4.	Create and select workspaces per environment inside envs/dev or envs/prod directories:
+        	cd envs/dev
+          terraform init
+          terraform workspace new dev
+          terraform apply
+        Similarly for prod:
+        cd ../prod
+        terraform init
+        terraform workspace new prod
+        terraform apply
+    5.	Verify outputs to get instance IDs and IPs.
+________________________________________
+9. Outputs
+    Outputs exposed by the module and root module include:
+        •	ec2_instance_id
+        •	ec2_instance_public_ip
+        •	ec2_instance_private_ip
+        •	s3_bucket_name (from backend infra)
+        •	dynamodb_table_name (from backend infra)
+
