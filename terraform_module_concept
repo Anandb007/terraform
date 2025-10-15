@@ -1,28 +1,19 @@
 Terraform Infrastructure Setup Documentation
 
 1. Objective
-
-          Create an Amazon EC2 instance with all prerequisite services (VPC, subnet, security group, key pair, IAM role), leveraging Terraform modules and variables to:
-          
+          Create an Amazon EC2 instance with all prerequisite services (VPC, subnet, security group, key pair, IAM role), leveraging Terraform modules and variables to: 
           Keep sensitive data/configuration outside main Terraform files
-          
           Reuse infrastructure components via modules
-          
           Verify Terraform code without connecting to AWS (dry-run)
-          
           Understand module usage through a practical example
 
 
 2. Initial Terraform EC2 Code Setup
-
           Create EC2 instance resource with attached:
-          
           Key pair,  Security group,  Subnet (inside VPC),  IAM role
-          
           Sensitive data (AMI ID, instance type, IAM role) are passed as variables.
           
           Example:
-          
           resource "aws_instance" "example" {
             ami                    = var.ami_id
             instance_type          = var.instance_type
@@ -38,9 +29,7 @@ Terraform Infrastructure Setup Documentation
 
 
 3. Using Variables for Sensitive Data
-
           Variables are defined to keep the config clean and secure.
-          
           Example variable declaration in variables.tf:
           
           variable "ami_id" {
@@ -56,17 +45,11 @@ Terraform Infrastructure Setup Documentation
           In terraform.tfvars or environment, set actual values:
           ami_id = "ami-0abcdef1234567890"
 
-.
-
 4. Terraform Modules Concept
-
-        Modules are reusable Terraform code blocks.
-        
-        Helps organize and reuse code.
-        
-        The root config is a module.
-        
-        You can create child modules and call them from root.
+          Modules are reusable Terraform code blocks.
+          Helps organize and reuse code.
+          The root config is a module.
+          You can create child modules and call them from root.
 
 5. Architecture Overview & Flow
           Architecture Components
@@ -268,8 +251,6 @@ terraform.tfvars
           security_groups       = ["sg-0abc1234def5678gh"]   # Replace with your SG name or id
           key_name              = "my-key-pair"
           instance_profile_name = "my-iam-instance-profile"
-
-
 _____________________________________________________________________________________________
 7. How to Run
           terraform init
@@ -277,7 +258,6 @@ ________________________________________________________________________________
           terraform plan
           terraform apply
           terraform output
-
 ____________________________________________________________________________________________
 8. Summary Table
           Topic	Key Points
@@ -286,5 +266,4 @@ ________________________________________________________________________________
           Modules	Reusable code blocks with variables & outputs
           Module example	EC2 instance module with input variables
           Root config	Calls module with variables
-
 _____________________________________________________________________________________________
